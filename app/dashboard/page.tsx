@@ -1,7 +1,6 @@
-"use client";
+'use client';
 
 //import { Metadata } from "next"
-import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -18,13 +17,49 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import { CalendarDateRangePicker } from "@/components/date-range-picker"
-import { MainNav } from "@/components/main-nav"
-import { Overview } from "@/components/overview"
-import { RecentSales } from "@/components/recent-sales"
-import { Search } from "@/components/search"
-import TeamSwitcher from "@/components/team-switcher"
-import { UserNav } from "@/components/user-nav"
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Overview } from "@/app/dashboard/overview"
+import { RecentSales } from "@/app/dashboard/recent-sales"
+import { DataTable } from "./data-table";
+import prisma from "@/prisma/client";
+import { PointsTarget, columns } from "./columns"
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { Avatar } from "@radix-ui/react-avatar";
+import { AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useEffect, useState } from "react";
+
+interface ipointstarget {
+  partyname: string;
+  regionname: string;
+  pointswallet: string;
+  schemename: string;
+  pointstarget: number;
+  pointsreceived: number;
+
+
+}
+
+interface icarddata {
+  signedprofile: number;
+  pointsreceived: number;
+  pointstarget: number;
+  targetpercent: number;
+  monthpoints: number;
+  recentactive: number;
+  activeprofilepercent: number;
+  previousmonthpoints: number;
+}
+
+interface ioverviewdata {
+  name: string;
+  total: number;
+}
+
+interface irecentdata {
+  name: string;
+  total: number;
+  avatar: string;
+  shopname: string;
+}
 
 // export const metadata: Metadata = {
 //   title: "Dashboard",
@@ -32,6 +67,41 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 // }
 
 export default function DashboardPage() {
+
+  const [maindata, setData] = useState<ipointstarget[]>();
+  const [carddata, setCardData] = useState<icarddata[]>();
+  const [overviewdata, setOverviewData] = useState<ioverviewdata[]>();
+  const [recentpointsdata, setRecentPointData] = useState<irecentdata[]>();
+
+
+  useEffect(() => {
+
+    getdata();
+
+  }, [])
+
+
+  const getdata = async () => {
+    const response = await fetch('http://localhost:3000/api/dashboard', { cache: 'no-store' });
+    const _data: ipointstarget[] = await response.json();
+    //const data: ipointstarget[] = await prisma.$queryRaw`EXEC	usp_points_target_vs_achieved`;
+    const responsecard = await fetch('http://localhost:3000/api/dashboard/carddata/achieved', { cache: 'no-store' });
+    const _datacard: icarddata[] = await responsecard.json();
+
+    const responseoverview = await fetch('http://localhost:3000/api/dashboard/overview', { cache: 'no-store' });
+    const _dataoverview: ioverviewdata[] = await responseoverview.json();
+
+    const responserecent = await fetch('http://localhost:3000/api/dashboard/recentpoints', { cache: 'no-store' });
+    const _datarecentpoints: irecentdata[] = await responserecent.json();
+
+    setData(_data);
+    setCardData(_datacard);
+    setOverviewData(_dataoverview);
+    setRecentPointData(_datarecentpoints);
+
+  }
+
+
   return (
     <>
       {/* <div className="md:hidden">
@@ -64,13 +134,13 @@ export default function DashboardPage() {
         <div className="flex-1 space-y-4 p-8 pt-6">
           <div className="flex items-center justify-between space-y-2">
             <h2 className="text-3xl font-bold tracking-tight">Points Dashboard</h2>
-            <div className="flex items-center space-x-2">
+            {/* <div className="flex items-center space-x-2">
               <CalendarDateRangePicker />
-              <Button>Download</Button>
-            </div>
+              <Button>Generate</Button>
+            </div> */}
           </div>
           <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList>
+            {/* <TabsList>
               <TabsTrigger value="overview">Overview</TabsTrigger>
               {/* <TabsTrigger value="analytics" disabled>
                 Analytics
@@ -81,31 +151,32 @@ export default function DashboardPage() {
               <TabsTrigger value="notifications" disabled>
                 Notifications
               </TabsTrigger> */}
-            </TabsList>
+            {/* </TabsList> */}
             <TabsContent value="overview" className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 ">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      Target Acheived Points
-                    </CardTitle>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      className="h-4 w-4 text-muted-foreground"
-                    >
-                      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                    </svg>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">Rs.45,231.89</div>
+              {carddata && carddata.map((data: icarddata, index: number) => (
+                <div key={index} className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        Target Acheived Points
+                      </CardTitle>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        className="h-4 w-4 text-muted-foreground"
+                      >
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                      </svg>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">Rs.{data.pointsreceived.toLocaleString()}</div>
                     <p className="text-xs text-muted-foreground">
-                      +20.1% till date
+                        +{data.targetpercent}% till date
                     </p>
                   </CardContent>
                 </Card>
@@ -130,9 +201,9 @@ export default function DashboardPage() {
                     </svg>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">+2350</div>
+                      <div className="text-2xl font-bold">+{data.signedprofile}</div>
                     <p className="text-xs text-muted-foreground">
-                      +18.1% of Active Profiles
+                        +{data.activeprofilepercent}% of Active Profiles
                     </p>
                   </CardContent>
                 </Card>
@@ -154,9 +225,9 @@ export default function DashboardPage() {
                     </svg>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">+12,234</div>
+                      <div className="text-2xl font-bold">+{data.monthpoints}</div>
                     <p className="text-xs text-muted-foreground">
-                      +19% from last month
+                        +{data.previousmonthpoints} from last month
                     </p>
                   </CardContent>
                 </Card>
@@ -179,124 +250,71 @@ export default function DashboardPage() {
                     </svg>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">+573</div>
+                      <div className="text-2xl font-bold">+{data.recentactive}</div>
                     <p className="text-xs text-muted-foreground">
-                      +201 since last hour
+                        +{ } since last hour
                     </p>
                   </CardContent>
                 </Card>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="col-span-4">
+                </div>))}
+              <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-7">
+                <Card className="col-span-3 sm:grid-cols-1">
                   <CardHeader>
                     <CardTitle>Overview</CardTitle>
                   </CardHeader>
                   <CardContent className="pl-2">
-                    <Overview />
+                    <ResponsiveContainer width="100%" height={350}>
+                      <BarChart data={overviewdata}>
+                        <XAxis
+                          dataKey="name"
+                          stroke="#888888"
+                          fontSize={12}
+                          tickLine={false}
+                          axisLine={false}
+                        />
+                        <YAxis
+                          stroke="#888888"
+                          fontSize={12}
+                          tickLine={false}
+                          axisLine={false}
+                          tickFormatter={(value) => `Rs.${value}`}
+                        />
+                        <Bar dataKey="total" fill="#adfa1d" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </CardContent>
                 </Card>
-                <Card className="col-span-3">
+                <Card className="col-span-4 xs:grid-cols-1  sm:grid-cols-1 lg:grid-cols-3">
                   <CardHeader>
                     <CardTitle>Recent Points Received</CardTitle>
                     <CardDescription>
-                      265 Profiles Received Points this month.
+                      Profiles Received Points this month.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <RecentSales />
+                    {recentpointsdata && recentpointsdata.map((data: irecentdata, index: number) => (
+                      <div key={index} className="space-y-6">
+                        <div className="flex items-center">
+                          <Avatar className="h-9 w-9">
+                            <AvatarImage src="/avatars/01.png" alt="Avatar" />
+                            <AvatarFallback>{data.avatar}</AvatarFallback>
+                          </Avatar>
+                          <div className="ml-4 space-y-1">
+                            <p className="text-sm font-medium leading-none">{data.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {data.shopname}
+                            </p>
+                          </div>
+                          <div className="ml-auto font-medium">+Rs.{data.total.toLocaleString()}</div>
+                        </div>
+                      </div>))}
                   </CardContent>
                 </Card>
 
               </div>
-              <div className="grid gap-4">
-                <Card className="col-span-4">
-                  <Table>
-                    <TableCaption>A list of your recent invoices.</TableCaption>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[200px]">Party Name</TableHead>
-                        <TableHead className="w-[200px]">Scheme</TableHead>
-                        <TableHead>Region</TableHead>
-                        <TableHead>Points Wallet</TableHead>
-                        <TableHead className="text-right">Target</TableHead>
-                        <TableHead className="text-right">Points</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell className="font-medium">HAJI RAJAN</TableCell>
-                        <TableCell>NARAN TOUR SCHEME</TableCell>
-                        <TableCell>MULTAN</TableCell>
-                        <TableCell>RECEIVED</TableCell>
-                        <TableCell className="text-right">Rs5,000,000.00</TableCell>
-                        <TableCell className="text-right">Rs2,500,000.00</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">HAJI RAJAN</TableCell>
-                        <TableCell>NARAN TOUR SCHEME</TableCell>
-                        <TableCell>MULTAN</TableCell>
-                        <TableCell>RECEIVED</TableCell>
-                        <TableCell className="text-right">Rs5,000,000.00</TableCell>
-                        <TableCell className="text-right">Rs2,500,000.00</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">HAJI RAJAN</TableCell>
-                        <TableCell>NARAN TOUR SCHEME</TableCell>
-                        <TableCell>MULTAN</TableCell>
-                        <TableCell>RECEIVED</TableCell>
-                        <TableCell className="text-right">Rs5,000,000.00</TableCell>
-                        <TableCell className="text-right">Rs2,500,000.00</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">HAJI RAJAN</TableCell>
-                        <TableCell>NARAN TOUR SCHEME</TableCell>
-                        <TableCell>MULTAN</TableCell>
-                        <TableCell>RECEIVED</TableCell>
-                        <TableCell className="text-right">Rs5,000,000.00</TableCell>
-                        <TableCell className="text-right">Rs2,500,000.00</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">HAJI RAJAN</TableCell>
-                        <TableCell>NARAN TOUR SCHEME</TableCell>
-                        <TableCell>MULTAN</TableCell>
-                        <TableCell>RECEIVED</TableCell>
-                        <TableCell className="text-right">Rs5,000,000.00</TableCell>
-                        <TableCell className="text-right">Rs2,500,000.00</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">HAJI RAJAN</TableCell>
-                        <TableCell>NARAN TOUR SCHEME</TableCell>
-                        <TableCell>MULTAN</TableCell>
-                        <TableCell>RECEIVED</TableCell>
-                        <TableCell className="text-right">Rs5,000,000.00</TableCell>
-                        <TableCell className="text-right">Rs2,500,000.00</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">HAJI RAJAN</TableCell>
-                        <TableCell>NARAN TOUR SCHEME</TableCell>
-                        <TableCell>MULTAN</TableCell>
-                        <TableCell>RECEIVED</TableCell>
-                        <TableCell className="text-right">Rs5,000,000.00</TableCell>
-                        <TableCell className="text-right">Rs2,500,000.00</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">HAJI RAJAN</TableCell>
-                        <TableCell>NARAN TOUR SCHEME</TableCell>
-                        <TableCell>MULTAN</TableCell>
-                        <TableCell>RECEIVED</TableCell>
-                        <TableCell className="text-right">Rs5,000,000.00</TableCell>
-                        <TableCell className="text-right">Rs2,500,000.00</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">HAJI RAJAN</TableCell>
-                        <TableCell>NARAN TOUR SCHEME</TableCell>
-                        <TableCell>MULTAN</TableCell>
-                        <TableCell>RECEIVED</TableCell>
-                        <TableCell className="text-right">Rs5,000,000.00</TableCell>
-                        <TableCell className="text-right">Rs2,500,000.00</TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
+              <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-1">
+                <Card className="col-span-4 px-2">
+                  <DataTable columns={columns} data={maindata || []} />
                 </Card>
               </div>
             </TabsContent>
